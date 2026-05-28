@@ -156,6 +156,23 @@ ENV PYTHONPATH=${OPENEB_BUILD}/py3:${OPENEB_SRC}/sdk/modules/core/python/pypkg:$
 RUN echo "${OPENEB_INSTALL}/lib" > /etc/ld.so.conf.d/openeb.conf && ldconfig
 
 ###################################
+###      Point to OpenEB HAL     ###
+###################################
+
+# Make ROS/metavision_driver use the OpenEB install that was built in this image.
+# This is required for IDS/uEye EVS cameras because the HAL plugin is installed
+# under /opt/openeb, not /usr/lib/ids/...
+ENV MV_HAL_PLUGIN_PATH=${OPENEB_INSTALL}/lib/metavision/hal/plugins
+ENV LD_LIBRARY_PATH=${OPENEB_INSTALL}/lib:/usr/local/lib:${LD_LIBRARY_PATH}
+ENV CMAKE_PREFIX_PATH=${OPENEB_INSTALL}:${CMAKE_PREFIX_PATH}
+
+# Register OpenEB libraries with the dynamic linker
+RUN echo "${OPENEB_INSTALL}/lib" > /etc/ld.so.conf.d/openeb.conf && ldconfig
+
+# Optional sanity check during build: fail early if IDS HAL plugin is missing
+RUN test -f ${OPENEB_INSTALL}/lib/metavision/hal/plugins/libueye_evs_hal_plugin.so
+
+###################################
 ###       ROS Event Camera      ###
 ###################################
 

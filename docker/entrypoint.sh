@@ -32,6 +32,15 @@ echo "alias camera='ros2 launch gorm_sensors cameras.launch.py'" >> ~/.bashrc
 echo "alias gps='ros2 launch ublox_gps ublox_gps_node_zedf9p-launch.py'" >> ~/.bashrc
 echo "alias bringup='ros2 launch gorm_bringup bringup.launch.py'" >> ~/.bashrc
 
+###################################
+###      Point to OpenEB HAL     ###
+###################################
+
+export MV_HAL_PLUGIN_PATH=/opt/openeb/lib/metavision/hal/plugins
+export LD_LIBRARY_PATH=/opt/openeb/lib:/usr/local/lib:${LD_LIBRARY_PATH}
+export CMAKE_PREFIX_PATH=/opt/openeb:${CMAKE_PREFIX_PATH}
+unset LD_PRELOAD
+
 if [[ $1 == "autostart" ]]
 then
     # If the first argument is "autostart", run the controller launch file
