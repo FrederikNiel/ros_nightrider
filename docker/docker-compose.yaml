@@ -1,0 +1,40 @@
+services:
+  ros_event_camera:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        L4T_VERSION_MAJOR: 36
+        L4T_VERSION_MINOR: 4
+        L4T_VERSION_PATCH: 0
+        ROS2_WRAPPER_FOLDER: /home/ros2_EB_ws
+    container_name: ros_event_camera
+    volumes:
+      - ../src:/home/workspace/src
+      - /tmp/argus_socket:/tmp/argus_socket
+      - /lib/modules/5.15.148-tegra:/lib/modules/5.15.148-tegra
+      - /dev/:/dev/
+      - /usr/local/zed/resources/:/usr/local/zed/resources/
+      - /tmp/.X11-unix/:/tmp/.X11-unix
+      - ${XAUTHORITY:-${HOME}/.Xauthority}:/root/.Xauthority:ro
+      - /dev/shm:/dev/shm
+    working_dir: /home/workspace
+    stdin_open: true
+    tty: true
+    environment:
+      - ROS_DOMAIN_ID=50 #might be 0
+      - RMW_IMPLEMENTATION=rmw_zenoh_cpp
+      - DISPLAY=${DISPLAY}
+      - XAUTHORITY=/root/.Xauthority
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    network_mode: host
+    privileged: true
+    runtime: nvidia
+    devices:
+      - /dev:/dev
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+      - /dev/video3:/dev/video3
+      - /dev/bus/usb:/dev/bus/usb
