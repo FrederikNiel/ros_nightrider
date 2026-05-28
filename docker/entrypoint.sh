@@ -88,3 +88,16 @@ grep -qxF "alias bringup='ros2 launch gorm_bringup bringup.launch.py'" ~/.bashrc
 grep -qxF "alias controller='ros2 launch controller controller.launch.py'" ~/.bashrc || \
     echo "alias controller='ros2 launch controller controller.launch.py'" >> ~/.bashrc
 
+###################################
+###          Autostart           ###
+###################################
+
+if [[ "$1" == "autostart" ]]; then
+    echo "Running the teleop controller in autostart mode..."
+    cd /home/workspace
+    colcon build
+    source install/setup.bash
+    ros2 launch gorm_bringup bringup_teleop.launch.py
+else
+    exec bash
+fi
