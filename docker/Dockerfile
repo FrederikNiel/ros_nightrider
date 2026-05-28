@@ -159,7 +159,7 @@ RUN echo "${OPENEB_INSTALL}/lib" > /etc/ld.so.conf.d/openeb.conf && ldconfig
 ###       ROS Event Camera      ###
 ###################################
 
-RUN apt-get update && apt-get install -y ros-${ROS_DISTRO}-metavision-driver
+RUN apt-get update && apt-get install -y ros-humble-metavision-driver
 
 
 ###################################
