@@ -176,7 +176,37 @@ RUN test -f ${OPENEB_INSTALL}/lib/metavision/hal/plugins/libueye_evs_hal_plugin.
 ###       ROS Event Camera      ###
 ###################################
 
-RUN apt-get update && apt-get install -y ros-humble-metavision-driver
+# Install ROS build tools and dependencies needed by metavision_driver
+RUN apt-get update && apt-get install -y \
+    git \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    ros-humble-ament-cmake \
+    ros-humble-ament-cmake-clang-format \
+    ros-humble-ament-cmake-copyright \
+    ros-humble-ament-cmake-cppcheck \
+    ros-humble-ament-cmake-lint-cmake \
+    ros-humble-ament-cmake-pep257 \
+    ros-humble-ament-cmake-uncrustify \
+    ros-humble-ament-cmake-xmllint \
+    ros-humble-event-camera-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build metavision_driver from source against the OpenEB install in /opt/openeb
+RUN mkdir -p ${WORKSPACE_DIR}/src && \
+    cd ${WORKSPACE_DIR}/src && \
+    git clone https://github.com/ros-event-camera/metavision_driver.git
+
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
+    export LD_LIBRARY_PATH=${OPENEB_INSTALL}/lib:/usr/local/lib:\${LD_LIBRARY_PATH} && \
+    export CMAKE_PREFIX_PATH=${OPENEB_INSTALL}:\${CMAKE_PREFIX_PATH} && \
+    export MV_HAL_PLUGIN_PATH=${OPENEB_INSTALL}/lib/metavision/hal/plugins && \
+    cd ${WORKSPACE_DIR} && \
+    colcon build --symlink-install \
+      --packages-select metavision_driver \
+      --cmake-args \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_PREFIX_PATH=${OPENEB_INSTALL}"
 
 
 ###################################

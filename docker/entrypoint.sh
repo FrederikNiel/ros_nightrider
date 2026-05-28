@@ -36,10 +36,14 @@ echo "alias bringup='ros2 launch gorm_bringup bringup.launch.py'" >> ~/.bashrc
 ###      Point to OpenEB HAL     ###
 ###################################
 
-export MV_HAL_PLUGIN_PATH=/opt/openeb/lib/metavision/hal/plugins
-export LD_LIBRARY_PATH=/opt/openeb/lib:/usr/local/lib:${LD_LIBRARY_PATH}
-export CMAKE_PREFIX_PATH=/opt/openeb:${CMAKE_PREFIX_PATH}
 unset LD_PRELOAD
+
+export OPENEB_INSTALL=/opt/openeb
+export MV_HAL_PLUGIN_PATH=${OPENEB_INSTALL}/lib/metavision/hal/plugins
+export LD_LIBRARY_PATH=${OPENEB_INSTALL}/lib:/usr/local/lib:${LD_LIBRARY_PATH}
+export CMAKE_PREFIX_PATH=${OPENEB_INSTALL}:${CMAKE_PREFIX_PATH}
+
+source /opt/ros/humble/setup.bash
 
 if [[ $1 == "autostart" ]]
 then
