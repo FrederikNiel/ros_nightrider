@@ -27,28 +27,6 @@ if [ -f /home/workspace/install/setup.bash ]; then
 fi
 
 ###################################
-###       Jetson CAN setup       ###
-###################################
-
-busybox devmem 0x0c303000 32 0x0000C400 || true
-busybox devmem 0x0c303008 32 0x0000C458 || true
-busybox devmem 0x0c303010 32 0x0000C400 || true
-busybox devmem 0x0c303018 32 0x0000C458 || true
-
-modprobe can || true
-modprobe can_raw || true
-modprobe mttcan || true
-
-ip link set down can0 || true
-ip link set down can1 || true
-
-ip link set can0 type can bitrate 1000000 || true
-ip link set can1 type can bitrate 1000000 || true
-
-ip link set up can0 || true
-ip link set up can1 || true
-
-###################################
 ###      Interactive shell setup  ###
 ###################################
 
@@ -78,6 +56,9 @@ grep -qxF "alias build='cd /home/workspace && colcon build && source install/set
 
 grep -qxF "alias camera='ros2 launch gorm_sensors cameras.launch.py'" ~/.bashrc || \
     echo "alias camera='ros2 launch gorm_sensors cameras.launch.py'" >> ~/.bashrc
+
+grep -qxF "alias renderer='ros2 launch event_camera_renderer renderer.launch.py camera:=event_camera'" ~/.bashrc || \
+    echo "alias renderer='ros2 launch event_camera_renderer renderer.launch.py camera:=event_camera'" >> ~/.bashrc
 
 grep -qxF "alias gps='ros2 launch ublox_gps ublox_gps_node_zedf9p-launch.py'" ~/.bashrc || \
     echo "alias gps='ros2 launch ublox_gps ublox_gps_node_zedf9p-launch.py'" >> ~/.bashrc
