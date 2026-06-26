@@ -192,10 +192,21 @@ RUN apt-get update && apt-get install -y \
     ros-humble-event-camera-msgs \
     && rm -rf /var/lib/apt/lists/*
 
-# Build metavision_driver from source against the OpenEB install in /opt/openeb
+# Build ROS event-camera packages from source
 RUN mkdir -p ${WORKSPACE_DIR}/src && \
     cd ${WORKSPACE_DIR}/src && \
-    git clone https://github.com/ros-event-camera/metavision_driver.git
+    git clone --branch master --single-branch \
+      https://github.com/ros-event-camera/metavision_driver.git && \
+    git clone --branch master --single-branch \
+      https://github.com/ros-event-camera/event_camera_renderer.git && \
+    sed -i 's/const int qsize = 1000;/const int qsize = 1;/' \
+      event_camera_renderer/src/renderer.cpp && \
+    sed -i \
+      's/const auto qosProf = rclcpp::SystemDefaultsQoS();/const auto qosProf = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile();/' \
+      event_camera_renderer/src/renderer.cpp && \
+    sed -i \
+      's/const auto qosProf = rmw_qos_profile_default;/auto qosProf = rmw_qos_profile_sensor_data; qosProf.depth = 1;/' \
+      event_camera_renderer/src/renderer.cpp
 
 RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
     export LD_LIBRARY_PATH=${OPENEB_INSTALL}/lib:/usr/local/lib:\${LD_LIBRARY_PATH} && \
