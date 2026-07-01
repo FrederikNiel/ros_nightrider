@@ -1,12 +1,14 @@
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.actions import ExecuteProcess
 from launch.actions import OpaqueFunction
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 import os
+import sys
 
 
 def make_driver(name, serial, bias_file):
@@ -75,12 +77,11 @@ def launch_setup(context):
     camera_1_serial = LaunchConfiguration("camera_1_serial").perform(context)
     with_renderer = LaunchConfiguration("with_renderer")
     with_event_frame_renderer = LaunchConfiguration("with_event_frame_renderer")
+    with_test_iris = LaunchConfiguration("with_test_iris")
 
-    bias_file = os.path.join(
-        get_package_share_directory("nightrider_camera_config"),
-        "config",
-        "imx636_low_rate.bias",
-    )
+    package_share = get_package_share_directory("nightrider_camera_config")
+    bias_file = os.path.join(package_share, "config", "imx636_low_rate.bias")
+    test_iris_script = os.path.join(package_share, "scripts", "test_iris.py")
 
     nodes = [
         make_driver(camera_0_name, camera_0_serial, bias_file),
@@ -118,6 +119,11 @@ def launch_setup(context):
             output="screen",
             condition=IfCondition(with_event_frame_renderer),
         ),
+        ExecuteProcess(
+            cmd=[sys.executable, test_iris_script],
+            output="screen",
+            condition=IfCondition(with_test_iris),
+        ),
     ]
 
 
@@ -130,6 +136,7 @@ def generate_launch_description():
             DeclareLaunchArgument("camera_1_serial", default_value="4110049266"),
             DeclareLaunchArgument("with_renderer", default_value="true"),
             DeclareLaunchArgument("with_event_frame_renderer", default_value="true"),
+            DeclareLaunchArgument("with_test_iris", default_value="false"),
             OpaqueFunction(function=launch_setup),
         ]
     )

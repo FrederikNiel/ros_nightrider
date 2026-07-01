@@ -24,7 +24,7 @@ GPIO.setup(PWM1, GPIO.OUT)
 pwm1 = GPIO.PWM(PWM1, 1000)
 pwm1.start(70)
 
-time.sleep(1000)
+time.sleep(5000)
 
 pwm0.stop()
 pwm1.stop()

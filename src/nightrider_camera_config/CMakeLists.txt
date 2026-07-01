@@ -8,4 +8,9 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(
+  PROGRAMS ../test_iris.py
+  DESTINATION share/${PROJECT_NAME}/scripts
+)
+
 ament_package()
