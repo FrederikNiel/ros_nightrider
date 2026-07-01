@@ -136,7 +136,7 @@ def generate_launch_description():
             DeclareLaunchArgument("camera_1_serial", default_value="4110049266"),
             DeclareLaunchArgument("with_renderer", default_value="true"),
             DeclareLaunchArgument("with_event_frame_renderer", default_value="true"),
-            DeclareLaunchArgument("with_test_iris", default_value="false"),
+            DeclareLaunchArgument("with_test_iris", default_value="true"),
             OpaqueFunction(function=launch_setup),
         ]
     )
