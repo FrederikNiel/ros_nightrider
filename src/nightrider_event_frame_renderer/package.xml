@@ -10,10 +10,12 @@
 
   <depend>event_camera_codecs</depend>
   <depend>event_camera_msgs</depend>
-  <depend>libopencv-dev</depend>
+  <depend>image_transport</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>sensor_msgs</depend>
+
+  <exec_depend>compressed_image_transport</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -4,8 +4,8 @@
 #include <event_camera_codecs/decoder_factory.h>
 #include <event_camera_codecs/event_processor.h>
 #include <event_camera_msgs/msg/event_packet.hpp>
+#include <image_transport/image_transport.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
 #include <cstdint>
@@ -37,8 +37,7 @@ private:
   void initializeFromPacket(const EventPacket & msg);
 
   rclcpp::Subscription<EventPacket>::SharedPtr eventSub_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imagePub_;
-  rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr compressedPub_;
+  image_transport::Publisher imagePub_;
   rclcpp::TimerBase::SharedPtr frameTimer_;
 
   event_camera_codecs::DecoderFactory<EventPacket, MonoEventFrameRenderer> decoderFactory_;
@@ -49,9 +48,6 @@ private:
 
   double fps_{10.0};
   uint8_t noEventValue_{127};
-  bool publishCompressed_{true};
-  int pngCompressionLevel_{3};
-  std::string compressedFormat_{"mono8; png compressed"};
 
   bool initialized_{false};
   bool frameHasEvents_{false};

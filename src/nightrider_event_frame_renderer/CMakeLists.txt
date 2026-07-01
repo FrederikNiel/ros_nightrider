@@ -6,7 +6,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 find_package(ament_cmake REQUIRED)
 find_package(event_camera_codecs REQUIRED)
 find_package(event_camera_msgs REQUIRED)
-find_package(OpenCV REQUIRED COMPONENTS imgcodecs)
+find_package(image_transport REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -15,15 +15,14 @@ add_library(mono_event_frame_renderer SHARED
   src/mono_event_frame_renderer.cpp)
 target_include_directories(mono_event_frame_renderer PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-  "$<INSTALL_INTERFACE:include>"
-  ${OpenCV_INCLUDE_DIRS})
+  "$<INSTALL_INTERFACE:include>")
 ament_target_dependencies(mono_event_frame_renderer
   event_camera_codecs
   event_camera_msgs
+  image_transport
   rclcpp
   rclcpp_components
   sensor_msgs)
-target_link_libraries(mono_event_frame_renderer ${OpenCV_LIBRARIES})
 
 rclcpp_components_register_nodes(
   mono_event_frame_renderer
@@ -49,6 +48,7 @@ install(
 ament_export_dependencies(
   event_camera_codecs
   event_camera_msgs
+  image_transport
   rclcpp
   rclcpp_components
   sensor_msgs)

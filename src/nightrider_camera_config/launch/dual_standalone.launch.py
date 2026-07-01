@@ -58,8 +58,8 @@ def make_event_frame_renderer(name):
             {
                 "fps": 10.0,
                 "no_event_value": 127,
-                "publish_compressed": True,
-                "png_compression_level": 3,
+                "image_raw.format": "jpeg",
+                "image_raw.jpeg_level": 3,
             }
         ],
         remappings=[("~/events", "events")],

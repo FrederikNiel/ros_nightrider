@@ -1,6 +1,5 @@
 #include "nightrider_event_frame_renderer/mono_event_frame_renderer.hpp"
 
-#include <opencv2/imgcodecs.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 
 #include <algorithm>
@@ -10,7 +9,6 @@
 #include <functional>
 #include <limits>
 #include <stdexcept>
-#include <utility>
 
 namespace nightrider_event_frame_renderer
 {
@@ -31,20 +29,11 @@ MonoEventFrameRenderer::MonoEventFrameRenderer(const rclcpp::NodeOptions & optio
   }
 
   noEventValue_ = clampByte(this->declare_parameter<int64_t>("no_event_value", 127));
-  publishCompressed_ = this->declare_parameter<bool>("publish_compressed", true);
-  const auto png_compression_level =
-    this->declare_parameter<int64_t>("png_compression_level", 3);
-  pngCompressionLevel_ =
-    static_cast<int>(std::clamp<int64_t>(png_compression_level, 0, 9));
 
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile();
   eventSub_ = this->create_subscription<EventPacket>(
     "~/events", qos, std::bind(&MonoEventFrameRenderer::eventPacketCallback, this, std::placeholders::_1));
-  imagePub_ = this->create_publisher<sensor_msgs::msg::Image>("~/image_raw", qos);
-  if (publishCompressed_) {
-    compressedPub_ =
-      this->create_publisher<sensor_msgs::msg::CompressedImage>("~/image_raw/compressed", qos);
-  }
+  imagePub_ = image_transport::create_publisher(this, "image_raw", qos.get_rmw_qos_profile());
 
   frameTimer_ = this->create_wall_timer(
     std::chrono::duration<double>(1.0 / fps_),
@@ -114,25 +103,8 @@ void MonoEventFrameRenderer::publishFrame()
   image.header.stamp = this->get_clock()->now();
   image.data = frame_;
 
-  if (imagePub_->get_subscription_count() > 0) {
-    imagePub_->publish(image);
-  }
-
-  if (publishCompressed_ && compressedPub_ && compressedPub_->get_subscription_count() > 0) {
-    sensor_msgs::msg::CompressedImage compressed;
-    compressed.header = image.header;
-    compressed.format = compressedFormat_;
-
-    const cv::Mat mono(
-      static_cast<int>(image.height), static_cast<int>(image.width), CV_8UC1, image.data.data(),
-      image.step);
-    const std::vector<int> params = {cv::IMWRITE_PNG_COMPRESSION, pngCompressionLevel_};
-    if (cv::imencode(".png", mono, compressed.data, params)) {
-      compressedPub_->publish(std::move(compressed));
-    } else {
-      RCLCPP_WARN_THROTTLE(
-        this->get_logger(), *this->get_clock(), 5000, "failed to PNG-compress mono event frame");
-    }
+  if (imagePub_.getNumSubscribers() > 0) {
+    imagePub_.publish(image);
   }
 
   if (frameHasEvents_) {
