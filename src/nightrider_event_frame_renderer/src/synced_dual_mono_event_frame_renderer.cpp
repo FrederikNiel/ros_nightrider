@@ -40,14 +40,10 @@ SyncedDualMonoEventFrameRenderer::SyncedDualMonoEventFrameRenderer(
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile();
   cameras_[0].eventSub = this->create_subscription<EventPacket>(
     "camera_0/events", qos,
-    std::bind(
-      &SyncedDualMonoEventFrameRenderer::eventPacketCallback, this, 0,
-      std::placeholders::_1));
+    [this](const EventPacket::ConstSharedPtr msg) { eventPacketCallback(0, msg); });
   cameras_[1].eventSub = this->create_subscription<EventPacket>(
     "camera_1/events", qos,
-    std::bind(
-      &SyncedDualMonoEventFrameRenderer::eventPacketCallback, this, 1,
-      std::placeholders::_1));
+    [this](const EventPacket::ConstSharedPtr msg) { eventPacketCallback(1, msg); });
 
   cameras_[0].imagePub = image_transport::create_publisher(
     this, "camera_0/image_raw", qos.get_rmw_qos_profile());
@@ -233,12 +229,18 @@ void SyncedDualMonoEventFrameRenderer::resetFrame(std::vector<uint8_t> & frame) 
 builtin_interfaces::msg::Time SyncedDualMonoEventFrameRenderer::stampFromBin(
   uint64_t bin) const
 {
-  const auto max_ns = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
-  uint64_t stamp_ns = max_ns;
-  if (bin <= max_ns / framePeriodNs_) {
+  constexpr uint64_t nsec_per_sec = 1000000000ULL;
+  const uint64_t max_stamp_ns =
+    static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) * nsec_per_sec +
+    (nsec_per_sec - 1);
+  uint64_t stamp_ns = max_stamp_ns;
+  if (bin <= max_stamp_ns / framePeriodNs_) {
     stamp_ns = bin * framePeriodNs_;
   }
-  return rclcpp::Time(static_cast<int64_t>(stamp_ns), RCL_SYSTEM_TIME).to_msg();
+  builtin_interfaces::msg::Time stamp;
+  stamp.sec = static_cast<int32_t>(stamp_ns / nsec_per_sec);
+  stamp.nanosec = static_cast<uint32_t>(stamp_ns % nsec_per_sec);
+  return stamp;
 }
 
 }  // namespace nightrider_event_frame_renderer
