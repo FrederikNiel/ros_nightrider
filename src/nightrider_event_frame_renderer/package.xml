@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>nightrider_event_frame_renderer</name>
+  <version>0.1.0</version>
+  <description>Mono event-frame renderer for NightRider RL image streams.</description>
+  <maintainer email="robotlab@example.com">RobotLab</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>event_camera_codecs</depend>
+  <depend>event_camera_msgs</depend>
+  <depend>libopencv-dev</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>sensor_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

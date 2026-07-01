@@ -48,12 +48,32 @@ def make_renderer(name):
     )
 
 
+def make_event_frame_renderer(name):
+    return ComposableNode(
+        package="nightrider_event_frame_renderer",
+        plugin="nightrider_event_frame_renderer::MonoEventFrameRenderer",
+        namespace=name,
+        name="event_frame_mono",
+        parameters=[
+            {
+                "fps": 10.0,
+                "no_event_value": 127,
+                "publish_compressed": True,
+                "png_compression_level": 3,
+            }
+        ],
+        remappings=[("~/events", "events")],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+
 def launch_setup(context):
     camera_0_name = LaunchConfiguration("camera_0_name").perform(context)
     camera_1_name = LaunchConfiguration("camera_1_name").perform(context)
     camera_0_serial = LaunchConfiguration("camera_0_serial").perform(context)
     camera_1_serial = LaunchConfiguration("camera_1_serial").perform(context)
     with_renderer = LaunchConfiguration("with_renderer")
+    with_event_frame_renderer = LaunchConfiguration("with_event_frame_renderer")
 
     bias_file = os.path.join(
         get_package_share_directory("nightrider_camera_config"),
@@ -66,6 +86,8 @@ def launch_setup(context):
         make_driver(camera_1_name, camera_1_serial, bias_file),
         make_renderer(camera_0_name),
         make_renderer(camera_1_name),
+        make_event_frame_renderer(camera_0_name),
+        make_event_frame_renderer(camera_1_name),
     ]
 
     return [
@@ -82,9 +104,18 @@ def launch_setup(context):
             namespace="",
             package="rclcpp_components",
             executable="component_container_isolated",
-            composable_node_descriptions=nodes[2:],
+            composable_node_descriptions=nodes[2:4],
             output="screen",
             condition=IfCondition(with_renderer),
+        ),
+        ComposableNodeContainer(
+            name="nightrider_event_frame_container",
+            namespace="",
+            package="rclcpp_components",
+            executable="component_container_isolated",
+            composable_node_descriptions=nodes[4:],
+            output="screen",
+            condition=IfCondition(with_event_frame_renderer),
         ),
     ]
 
@@ -97,6 +128,7 @@ def generate_launch_description():
             DeclareLaunchArgument("camera_0_serial", default_value="4110047898"),
             DeclareLaunchArgument("camera_1_serial", default_value="4110049266"),
             DeclareLaunchArgument("with_renderer", default_value="true"),
+            DeclareLaunchArgument("with_event_frame_renderer", default_value="true"),
             OpaqueFunction(function=launch_setup),
         ]
     )
