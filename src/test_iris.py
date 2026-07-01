@@ -1,8 +1,8 @@
 import Jetson.GPIO as GPIO
 import time
 
-PWM0 = 32
-PWM1 = 33
+PWM0 = 13
+PWM1 = 15
 DUTY0 = 60
 DUTY1 = DUTY0
 
