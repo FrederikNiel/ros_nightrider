@@ -48,6 +48,7 @@ private:
 
   double fps_{10.0};
   uint8_t noEventValue_{127};
+  bool rotate180_{false};
 
   bool initialized_{false};
   bool frameHasEvents_{false};

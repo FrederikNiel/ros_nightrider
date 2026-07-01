@@ -29,6 +29,7 @@ MonoEventFrameRenderer::MonoEventFrameRenderer(const rclcpp::NodeOptions & optio
   }
 
   noEventValue_ = clampByte(this->declare_parameter<int64_t>("no_event_value", 127));
+  rotate180_ = this->declare_parameter<bool>("rotate_180", false);
 
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile();
   eventSub_ = this->create_subscription<EventPacket>(
@@ -89,7 +90,9 @@ void MonoEventFrameRenderer::eventCD(
   if (x >= imageTemplate_.width || y >= imageTemplate_.height || frame_.empty()) {
     return;
   }
-  frame_[static_cast<size_t>(y) * imageTemplate_.step + x] = polarity ? 255 : 0;
+  const auto image_x = rotate180_ ? imageTemplate_.width - 1U - x : x;
+  const auto image_y = rotate180_ ? imageTemplate_.height - 1U - y : y;
+  frame_[static_cast<size_t>(image_y) * imageTemplate_.step + image_x] = polarity ? 255 : 0;
   frameHasEvents_ = true;
 }
 
