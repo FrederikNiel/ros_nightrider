@@ -5,8 +5,9 @@
 
 #include <algorithm>
 #include <chrono>
-#include <functional>
 #include <cmath>
+#include <cstdint>
+#include <functional>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -15,9 +16,9 @@ namespace nightrider_event_frame_renderer
 {
 namespace
 {
-uint8_t clampByte(int value)
+uint8_t clampByte(int64_t value)
 {
-  return static_cast<uint8_t>(std::clamp(value, 0, 255));
+  return static_cast<uint8_t>(std::clamp<int64_t>(value, 0, 255));
 }
 }  // namespace
 
@@ -29,9 +30,12 @@ MonoEventFrameRenderer::MonoEventFrameRenderer(const rclcpp::NodeOptions & optio
     throw std::runtime_error("fps must be positive");
   }
 
-  noEventValue_ = clampByte(this->declare_parameter<int>("no_event_value", 127));
+  noEventValue_ = clampByte(this->declare_parameter<int64_t>("no_event_value", 127));
   publishCompressed_ = this->declare_parameter<bool>("publish_compressed", true);
-  pngCompressionLevel_ = std::clamp(this->declare_parameter<int>("png_compression_level", 3), 0, 9);
+  const auto png_compression_level =
+    this->declare_parameter<int64_t>("png_compression_level", 3);
+  pngCompressionLevel_ =
+    static_cast<int>(std::clamp<int64_t>(png_compression_level, 0, 9));
 
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile();
   eventSub_ = this->create_subscription<EventPacket>(
