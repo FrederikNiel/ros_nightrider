@@ -28,6 +28,23 @@ rclcpp_components_register_nodes(
   mono_event_frame_renderer
   "nightrider_event_frame_renderer::MonoEventFrameRenderer")
 
+add_library(synced_dual_mono_event_frame_renderer SHARED
+  src/synced_dual_mono_event_frame_renderer.cpp)
+target_include_directories(synced_dual_mono_event_frame_renderer PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>")
+ament_target_dependencies(synced_dual_mono_event_frame_renderer
+  event_camera_codecs
+  event_camera_msgs
+  image_transport
+  rclcpp
+  rclcpp_components
+  sensor_msgs)
+
+rclcpp_components_register_nodes(
+  synced_dual_mono_event_frame_renderer
+  "nightrider_event_frame_renderer::SyncedDualMonoEventFrameRenderer")
+
 add_executable(mono_event_frame_renderer_node
   src/mono_event_frame_renderer_node.cpp)
 target_link_libraries(mono_event_frame_renderer_node
@@ -40,7 +57,10 @@ install(
   DESTINATION include)
 
 install(
-  TARGETS mono_event_frame_renderer mono_event_frame_renderer_node
+  TARGETS
+    mono_event_frame_renderer
+    synced_dual_mono_event_frame_renderer
+    mono_event_frame_renderer_node
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME})
@@ -53,6 +73,8 @@ ament_export_dependencies(
   rclcpp_components
   sensor_msgs)
 ament_export_include_directories(include)
-ament_export_libraries(mono_event_frame_renderer)
+ament_export_libraries(
+  mono_event_frame_renderer
+  synced_dual_mono_event_frame_renderer)
 
 ament_package()

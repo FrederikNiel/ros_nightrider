@@ -11,7 +11,11 @@ import os
 import sys
 
 
-def make_driver(name, serial, bias_file):
+def make_driver(name, serial, bias_file, sync_mode="standalone", ready_camera_name=None):
+    remappings = [("~/events", f"{name}/events")]
+    if ready_camera_name is not None:
+        remappings.append(("~/ready", f"{ready_camera_name}/ready"))
+
     return ComposableNode(
         package="metavision_driver",
         plugin="metavision_driver::DriverROS2",
@@ -19,7 +23,7 @@ def make_driver(name, serial, bias_file):
         parameters=[
             {
                 "serial": serial,
-                "sync_mode": "standalone",
+                "sync_mode": sync_mode,
                 "bias_file": bias_file,
                 "erc_mode": "enabled",
                 "erc_rate": 1000000,
@@ -28,7 +32,7 @@ def make_driver(name, serial, bias_file):
                 "use_multithreading": False,
             }
         ],
-        remappings=[("~/events", f"{name}/events")],
+        remappings=remappings,
         extra_arguments=[{"use_intra_process_comms": True}],
     )
 
@@ -70,6 +74,39 @@ def make_event_frame_renderer(name):
     )
 
 
+def make_synced_event_frame_renderer(camera_0_name, camera_1_name):
+    parameters = {
+        "fps": 10.0,
+        "no_event_value": 127,
+        "rotate_180": True,
+        "max_queued_frames": 30,
+        "image_raw.format": "png",
+        "image_raw.png_level": 3,
+        "camera_0.image_raw.format": "png",
+        "camera_0.image_raw.png_level": 3,
+        "camera_1.image_raw.format": "png",
+        "camera_1.image_raw.png_level": 3,
+        f"{camera_0_name}.image_raw.format": "png",
+        f"{camera_0_name}.image_raw.png_level": 3,
+        f"{camera_1_name}.image_raw.format": "png",
+        f"{camera_1_name}.image_raw.png_level": 3,
+    }
+
+    return ComposableNode(
+        package="nightrider_event_frame_renderer",
+        plugin="nightrider_event_frame_renderer::SyncedDualMonoEventFrameRenderer",
+        name="synced_event_frame_mono",
+        parameters=[parameters],
+        remappings=[
+            ("camera_0/events", f"{camera_0_name}/events"),
+            ("camera_1/events", f"{camera_1_name}/events"),
+            ("camera_0/image_raw", f"{camera_0_name}/image_raw"),
+            ("camera_1/image_raw", f"{camera_1_name}/image_raw"),
+        ],
+        extra_arguments=[{"use_intra_process_comms": True}],
+    )
+
+
 def launch_setup(context):
     camera_0_name = LaunchConfiguration("camera_0_name").perform(context)
     camera_1_name = LaunchConfiguration("camera_1_name").perform(context)
@@ -78,19 +115,40 @@ def launch_setup(context):
     with_renderer = LaunchConfiguration("with_renderer")
     with_event_frame_renderer = LaunchConfiguration("with_event_frame_renderer")
     with_test_iris = LaunchConfiguration("with_test_iris")
+    with_synced_events = LaunchConfiguration("with_synced_events")
+    synced_events = IfCondition(with_synced_events).evaluate(context)
 
     package_share = get_package_share_directory("nightrider_camera_config")
     bias_file = os.path.join(package_share, "config", "imx636_low_rate.bias")
     test_iris_script = os.path.join(package_share, "scripts", "test_iris.py")
 
-    nodes = [
-        make_driver(camera_0_name, camera_0_serial, bias_file),
-        make_driver(camera_1_name, camera_1_serial, bias_file),
+    camera_nodes = [
+        make_driver(
+            camera_0_name,
+            camera_0_serial,
+            bias_file,
+            "primary" if synced_events else "standalone",
+            camera_1_name if synced_events else None,
+        ),
+        make_driver(
+            camera_1_name,
+            camera_1_serial,
+            bias_file,
+            "secondary" if synced_events else "standalone",
+        ),
+    ]
+    renderer_nodes = [
         make_renderer(camera_0_name),
         make_renderer(camera_1_name),
-        make_event_frame_renderer(camera_0_name),
-        make_event_frame_renderer(camera_1_name),
     ]
+    event_frame_nodes = (
+        [make_synced_event_frame_renderer(camera_0_name, camera_1_name)]
+        if synced_events
+        else [
+            make_event_frame_renderer(camera_0_name),
+            make_event_frame_renderer(camera_1_name),
+        ]
+    )
 
     return [
         ComposableNodeContainer(
@@ -98,7 +156,7 @@ def launch_setup(context):
             namespace="",
             package="rclcpp_components",
             executable="component_container_isolated",
-            composable_node_descriptions=nodes[:2],
+            composable_node_descriptions=camera_nodes,
             output="screen",
         ),
         ComposableNodeContainer(
@@ -106,7 +164,7 @@ def launch_setup(context):
             namespace="",
             package="rclcpp_components",
             executable="component_container_isolated",
-            composable_node_descriptions=nodes[2:4],
+            composable_node_descriptions=renderer_nodes,
             output="screen",
             condition=IfCondition(with_renderer),
         ),
@@ -115,7 +173,7 @@ def launch_setup(context):
             namespace="",
             package="rclcpp_components",
             executable="component_container_isolated",
-            composable_node_descriptions=nodes[4:],
+            composable_node_descriptions=event_frame_nodes,
             output="screen",
             condition=IfCondition(with_event_frame_renderer),
         ),
@@ -137,6 +195,7 @@ def generate_launch_description():
             DeclareLaunchArgument("with_renderer", default_value="true"),
             DeclareLaunchArgument("with_event_frame_renderer", default_value="true"),
             DeclareLaunchArgument("with_test_iris", default_value="true"),
+            DeclareLaunchArgument("with_synced_events", default_value="false"),
             OpaqueFunction(function=launch_setup),
         ]
     )
