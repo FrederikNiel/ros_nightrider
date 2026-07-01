@@ -59,8 +59,8 @@ def make_event_frame_renderer(name):
                 "fps": 10.0,
                 "no_event_value": 127,
                 "rotate_180": True,
-                "image_raw.format": "jpeg",
-                "image_raw.jpeg_quality": 95,
+                "image_raw.format": "png",
+                "image_raw.png_level": 3,
             }
         ],
         remappings=[("~/events", "events")],
