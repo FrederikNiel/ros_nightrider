@@ -3,6 +3,7 @@
 #include <rclcpp_components/register_node_macro.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <functional>
@@ -36,6 +37,14 @@ SyncedDualMonoEventFrameRenderer::SyncedDualMonoEventFrameRenderer(
   rotate180_ = this->declare_parameter<bool>("rotate_180", false);
   const auto queue_size = this->declare_parameter<int64_t>("max_queued_frames", 30);
   maxQueuedFrames_ = static_cast<size_t>(std::max<int64_t>(queue_size, 1));
+  imageTopics_[0] = this->declare_parameter<std::string>(
+    "camera_0_image_topic", "camera_0/image_raw");
+  imageTopics_[1] = this->declare_parameter<std::string>(
+    "camera_1_image_topic", "camera_1/image_raw");
+  stampBaseNs_ = static_cast<uint64_t>(
+    std::chrono::duration_cast<std::chrono::nanoseconds>(
+      std::chrono::system_clock::now().time_since_epoch())
+      .count());
 
   const auto qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile();
   cameras_[0].eventSub = this->create_subscription<EventPacket>(
@@ -46,13 +55,14 @@ SyncedDualMonoEventFrameRenderer::SyncedDualMonoEventFrameRenderer(
     [this](const EventPacket::ConstSharedPtr msg) { eventPacketCallback(1, msg); });
 
   cameras_[0].imagePub = image_transport::create_publisher(
-    this, "camera_0/image_raw", qos.get_rmw_qos_profile());
+    this, imageTopics_[0], qos.get_rmw_qos_profile());
   cameras_[1].imagePub = image_transport::create_publisher(
-    this, "camera_1/image_raw", qos.get_rmw_qos_profile());
+    this, imageTopics_[1], qos.get_rmw_qos_profile());
 
   RCLCPP_INFO(
     this->get_logger(),
-    "synced_dual_mono_event_frame_renderer publishing paired mono8 at %.3f Hz", fps_);
+    "synced_dual_mono_event_frame_renderer publishing paired mono8 at %.3f Hz on %s and %s",
+    fps_, imageTopics_[0].c_str(), imageTopics_[1].c_str());
 }
 
 void SyncedDualMonoEventFrameRenderer::initializeFromPacket(
@@ -124,8 +134,20 @@ void SyncedDualMonoEventFrameRenderer::eventCD(
     return;
   }
 
-  const uint64_t bin = sensor_time / framePeriodNs_;
-  if (!advanceToBin(camera, bin)) {
+  const uint64_t sensor_bin = sensor_time / framePeriodNs_;
+  if (!camera.hasOriginBin) {
+    camera.originBin = sensor_bin;
+    camera.hasOriginBin = true;
+    RCLCPP_INFO(
+      this->get_logger(), "camera %d synced frame origin bin: %lu",
+      activeCamera_, camera.originBin);
+  }
+  if (sensor_bin < camera.originBin) {
+    return;
+  }
+
+  const uint64_t relative_bin = sensor_bin - camera.originBin;
+  if (!advanceToBin(camera, relative_bin)) {
     return;
   }
 
@@ -234,8 +256,8 @@ builtin_interfaces::msg::Time SyncedDualMonoEventFrameRenderer::stampFromBin(
     static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) * nsec_per_sec +
     (nsec_per_sec - 1);
   uint64_t stamp_ns = max_stamp_ns;
-  if (bin <= max_stamp_ns / framePeriodNs_) {
-    stamp_ns = bin * framePeriodNs_;
+  if (bin <= (max_stamp_ns - stampBaseNs_) / framePeriodNs_) {
+    stamp_ns = stampBaseNs_ + bin * framePeriodNs_;
   }
   builtin_interfaces::msg::Time stamp;
   stamp.sec = static_cast<int32_t>(stamp_ns / nsec_per_sec);

@@ -14,6 +14,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 
 namespace nightrider_event_frame_renderer
@@ -47,7 +48,9 @@ private:
     sensor_msgs::msg::Image imageTemplate;
     std::vector<uint8_t> currentFrame;
     std::map<uint64_t, std::vector<uint8_t>> completedFrames;
+    uint64_t originBin{0};
     uint64_t currentBin{0};
+    bool hasOriginBin{false};
     bool hasCurrentBin{false};
     bool initialized{false};
   };
@@ -62,10 +65,12 @@ private:
   builtin_interfaces::msg::Time stampFromBin(uint64_t bin) const;
 
   std::array<CameraState, 2> cameras_;
+  std::array<std::string, 2> imageTopics_;
   std::mutex mutex_;
 
   double fps_{10.0};
   uint64_t framePeriodNs_{100000000};
+  uint64_t stampBaseNs_{0};
   uint8_t noEventValue_{127};
   bool rotate180_{false};
   size_t maxQueuedFrames_{30};

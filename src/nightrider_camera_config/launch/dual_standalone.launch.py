@@ -80,6 +80,8 @@ def make_synced_event_frame_renderer(camera_0_name, camera_1_name):
         "no_event_value": 127,
         "rotate_180": True,
         "max_queued_frames": 30,
+        "camera_0_image_topic": f"{camera_0_name}/image_raw",
+        "camera_1_image_topic": f"{camera_1_name}/image_raw",
         "image_raw.format": "png",
         "image_raw.png_level": 3,
         "camera_0.image_raw.format": "png",
@@ -100,8 +102,6 @@ def make_synced_event_frame_renderer(camera_0_name, camera_1_name):
         remappings=[
             ("camera_0/events", f"{camera_0_name}/events"),
             ("camera_1/events", f"{camera_1_name}/events"),
-            ("camera_0/image_raw", f"{camera_0_name}/image_raw"),
-            ("camera_1/image_raw", f"{camera_1_name}/image_raw"),
         ],
         extra_arguments=[{"use_intra_process_comms": True}],
     )
