@@ -9,8 +9,15 @@ install(
 )
 
 install(
-  PROGRAMS ../test_iris.py
+  PROGRAMS
+    ../test_iris.py
+    scripts/event_sync_monitor.py
   DESTINATION share/${PROJECT_NAME}/scripts
+)
+
+install(
+  PROGRAMS scripts/event_sync_monitor.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()

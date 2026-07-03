@@ -107,6 +107,38 @@ def make_synced_event_frame_renderer(camera_0_name, camera_1_name):
     )
 
 
+def make_sync_monitor(camera_0_name, camera_1_name, script_path, condition):
+    return ExecuteProcess(
+        cmd=[
+            sys.executable,
+            script_path,
+            "--ros-args",
+            "-r",
+            "__node:=event_sync_monitor",
+            "-p",
+            f"camera_0_topic:=/{camera_0_name}/events",
+            "-p",
+            f"camera_1_topic:=/{camera_1_name}/events",
+            "-p",
+            "bucket_us:=1000",
+            "-p",
+            "window_buckets:=200",
+            "-p",
+            "max_lag_us:=20000",
+            "-p",
+            "max_offset_us:=1000",
+            "-p",
+            "max_jitter_us:=2000",
+            "-p",
+            "min_correlation:=0.75",
+            "-p",
+            "polarity:=on",
+        ],
+        output="screen",
+        condition=condition,
+    )
+
+
 def launch_setup(context):
     camera_0_name = LaunchConfiguration("camera_0_name").perform(context)
     camera_1_name = LaunchConfiguration("camera_1_name").perform(context)
@@ -116,11 +148,13 @@ def launch_setup(context):
     with_event_frame_renderer = LaunchConfiguration("with_event_frame_renderer")
     with_test_iris = LaunchConfiguration("with_test_iris")
     with_synced_events = LaunchConfiguration("with_synced_events")
+    with_sync_monitor = LaunchConfiguration("with_sync_monitor")
     synced_events = IfCondition(with_synced_events).evaluate(context)
 
     package_share = get_package_share_directory("nightrider_camera_config")
     bias_file = os.path.join(package_share, "config", "imx636_low_rate.bias")
     test_iris_script = os.path.join(package_share, "scripts", "test_iris.py")
+    sync_monitor_script = os.path.join(package_share, "scripts", "event_sync_monitor.py")
 
     camera_nodes = [
         make_driver(
@@ -182,6 +216,12 @@ def launch_setup(context):
             output="screen",
             condition=IfCondition(with_test_iris),
         ),
+        make_sync_monitor(
+            camera_0_name,
+            camera_1_name,
+            sync_monitor_script,
+            IfCondition(with_sync_monitor),
+        ),
     ]
 
 
@@ -196,6 +236,7 @@ def generate_launch_description():
             DeclareLaunchArgument("with_event_frame_renderer", default_value="true"),
             DeclareLaunchArgument("with_test_iris", default_value="true"),
             DeclareLaunchArgument("with_synced_events", default_value="false"),
+            DeclareLaunchArgument("with_sync_monitor", default_value="false"),
             OpaqueFunction(function=launch_setup),
         ]
     )
