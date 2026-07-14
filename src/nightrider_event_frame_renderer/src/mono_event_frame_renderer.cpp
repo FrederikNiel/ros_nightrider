@@ -106,9 +106,7 @@ void MonoEventFrameRenderer::publishFrame()
   image.header.stamp = this->get_clock()->now();
   image.data = frame_;
 
-  if (imagePub_.getNumSubscribers() > 0) {
-    imagePub_.publish(image);
-  }
+  imagePub_.publish(image);
 
   if (frameHasEvents_) {
     resetFrame();

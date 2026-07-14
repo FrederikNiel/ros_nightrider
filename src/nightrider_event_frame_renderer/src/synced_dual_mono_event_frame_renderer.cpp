@@ -233,10 +233,6 @@ void SyncedDualMonoEventFrameRenderer::publishFrame(
   size_t camera_index, uint64_t bin, const std::vector<uint8_t> & frame)
 {
   auto & camera = cameras_[camera_index];
-  if (camera.imagePub.getNumSubscribers() == 0) {
-    return;
-  }
-
   sensor_msgs::msg::Image image = camera.imageTemplate;
   image.header.stamp = stampFromBin(bin);
   image.data = frame;
